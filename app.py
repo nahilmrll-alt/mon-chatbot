@@ -128,4 +128,15 @@ if question:
     with st.chat_message("assistant"):
         st.markdown("**🌙 MoonIA**")
         with st.spinner("MoonIA est en train d'écrire..."):
-            reponse =
+            reponse = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=st.session_state.historique
+            )
+            reponse_bot = reponse.choices[0].message.content
+        st.markdown(reponse_bot)
+
+    st.session_state.historique.append({"role": "assistant", "content": reponse_bot})
+
+    sauvegarder_conversation(st.session_state.fichier_actuel, st.session_state.historique)
+       
+        
