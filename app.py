@@ -14,7 +14,6 @@ DOSSIER_CONVERSATIONS = "conversations"
 if not os.path.exists(DOSSIER_CONVERSATIONS):
     os.makedirs(DOSSIER_CONVERSATIONS)
 
-# Personnalite / instructions cachees donnees au bot
 PERSONNALITE = (
     "Tu es MoonIA, un assistant IA chaleureux, clair et serviable. "
     "Tu reponds en francais sauf si on te demande une autre langue. "
@@ -68,7 +67,6 @@ def generer_titre(premier_message):
 
 
 def a_besoin_recherche_web(message):
-    """Detecte si la question necessite probablement une recherche web."""
     mots_cles = [
         "aujourd'hui", "actualite", "actualites", "recent", "recente",
         "derniere", "dernier", "maintenant", "en ce moment", "2026",
@@ -80,7 +78,6 @@ def a_besoin_recherche_web(message):
 
 
 def rechercher_sur_le_web(requete):
-    """Effectue une recherche web via Tavily et renvoie un resume textuel des resultats."""
     if not TAVILY_API_KEY:
         return None
     try:
@@ -106,7 +103,6 @@ def rechercher_sur_le_web(requete):
 
 
 def extraire_texte_fichier(fichier_televerse):
-    """Extrait le texte d'un fichier televerse (txt ou pdf)."""
     nom = fichier_televerse.name.lower()
     if nom.endswith(".txt"):
         return fichier_televerse.read().decode("utf-8", errors="ignore")
@@ -279,7 +275,6 @@ if question:
     st.session_state.historique.append({"role": "user", "content": question})
     afficher_message_user(question)
 
-    # Construit les messages a envoyer, avec personnalite + contexte fichier + recherche web
     messages_a_envoyer = [{"role": "system", "content": PERSONNALITE}]
 
     if st.session_state.contexte_fichier:
