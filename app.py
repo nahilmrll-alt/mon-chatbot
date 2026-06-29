@@ -36,7 +36,16 @@ def nouveau_nom_fichier():
 
 
 st.set_page_config(page_title="MoonIA", page_icon="💬")
-
+st.markdown("""
+<style>
+[data-testid="stChatMessage"] {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0.5rem 0 !important;
+    box-shadow: none !important;
+}
+</style>
+""", unsafe_allow_html=True)
 if "fichier_actuel" not in st.session_state:
     st.session_state.fichier_actuel = None
 if "historique" not in st.session_state:
