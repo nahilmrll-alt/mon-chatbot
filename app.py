@@ -38,18 +38,50 @@ def nouveau_nom_fichier():
 st.set_page_config(page_title="MoonIA", page_icon="💬")
 st.markdown("""
 <style>
+/* Fond général */
+.stApp {
+    background-color: #1a1a1a;
+}
+
+/* Police plus douce */
+html, body, [class*="css"] {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+/* Supprime les bulles de chat */
 [data-testid="stChatMessage"] {
     background-color: transparent !important;
     border: none !important;
-    padding: 0.5rem 0 !important;
     box-shadow: none !important;
+    padding: 1.2rem 0 !important;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Largeur du contenu central, comme Claude */
+.block-container {
+    max-width: 700px;
+    padding-top: 2rem;
+}
+
+/* Titre plus discret */
+h1 {
+    font-size: 1.8rem !important;
+    font-weight: 600 !important;
+}
+
+/* Barre latérale plus sobre */
+[data-testid="stSidebar"] {
+    background-color: #161616;
+}
+
+/* Zone de saisie en bas */
+[data-testid="stChatInput"] {
+    max-width: 700px;
+    margin: 0 auto;
 }
 </style>
 """, unsafe_allow_html=True)
-if "fichier_actuel" not in st.session_state:
-    st.session_state.fichier_actuel = None
-if "historique" not in st.session_state:
-    st.session_state.historique = []
 
 with st.sidebar:
     st.title("💬 Conversations")
