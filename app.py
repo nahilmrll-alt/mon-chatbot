@@ -25,14 +25,37 @@ def charger_conversation(nom_fichier):
         return json.load(f)
 
 
-def sauvegarder_conversation(nom_fichier, historique):
+def sauvegarder_conversation(nom_fichier, historique, titre):
     chemin = os.path.join(DOSSIER_CONVERSATIONS, nom_fichier)
+    donnees = {"titre": titre, "messages": historique}
     with open(chemin, "w", encoding="utf-8") as f:
-        json.dump(historique, f, ensure_ascii=False, indent=2)
+        json.dump(donnees, f, ensure_ascii=False, indent=2)
 
 
 def nouveau_nom_fichier():
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".json"
+
+
+def generer_titre(premier_message):
+    try:
+        reponse = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        "Donne un titre tres court (4 mots maximum, sans guillemets, "
+                        "sans ponctuation finale) qui resume ce message : "
+                        f"\"{premier_message}\""
+                    )
+                }
+            ]
+        )
+        titre = reponse.choices[0].message.content.strip()
+        titre = titre.replace('"', '').replace("«", "").replace("»", "")
+        return titre[:40]
+    except Exception:
+        return premier_message[:40]
 
 
 st.set_page_config(page_title="MoonIA", page_icon="💬")
@@ -41,6 +64,7 @@ st.markdown("""
 <style>
 .stApp {
     background-color: #1a1a1a;
+    font-size: 17px;
 }
 
 html, body, [class*="css"] {
@@ -53,12 +77,13 @@ html, body, [class*="css"] {
 }
 
 h1 {
-    font-size: 1.8rem !important;
+    font-size: 2rem !important;
     font-weight: 600 !important;
 }
 
 [data-testid="stSidebar"] {
     background-color: #161616;
+    font-size: 16px;
 }
 
 [data-testid="stChatInput"] {
@@ -66,29 +91,45 @@ h1 {
     margin: 0 auto;
 }
 
+[data-testid="stChatInput"] textarea {
+    font-size: 17px !important;
+}
+
 .user-bubble {
     background-color: #2b2b2b;
     color: #f5f5f5;
     border-radius: 14px;
-    padding: 0.6rem 1rem;
+    padding: 0.75rem 1.1rem;
     display: inline-block;
     max-width: 80%;
     text-align: left;
+    font-size: 17px;
+    line-height: 1.6;
 }
 
 .user-bubble-wrapper {
     display: flex;
     justify-content: flex-end;
-    margin: 0.6rem 0;
+    margin: 0.9rem 0;
 }
 
 .bot-wrapper {
     text-align: left;
-    margin: 0.6rem 0;
+    margin: 0.9rem 0;
+}
+
+.bot-wrapper b {
+    font-size: 16px;
 }
 
 .bot-text {
     color: #e8e8e8;
+    font-size: 17px;
+    line-height: 1.65;
+}
+
+button {
+    font-size: 15px !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -97,23 +138,29 @@ if "fichier_actuel" not in st.session_state:
     st.session_state.fichier_actuel = None
 if "historique" not in st.session_state:
     st.session_state.historique = []
+if "titre_actuel" not in st.session_state:
+    st.session_state.titre_actuel = None
 
 with st.sidebar:
     st.title("💬 Conversations")
 
     if st.button("➕ Nouvelle conversation", use_container_width=True):
-        st.session_state.fichier_actuel = nouveau_nom_fichier()
+        st.session_state.fichier_actuel = None
         st.session_state.historique = []
+        st.session_state.titre_actuel = None
         st.rerun()
 
     st.divider()
+    st.caption("Récents")
 
     conversations = lister_conversations()
     for fichier in conversations:
-        nom_affiche = fichier.replace(".json", "")
-        if st.button(nom_affiche, key=fichier, use_container_width=True):
+        donnees = charger_conversation(fichier)
+        titre_affiche = donnees.get("titre", fichier.replace(".json", ""))
+        if st.button(titre_affiche, key=fichier, use_container_width=True):
             st.session_state.fichier_actuel = fichier
-            st.session_state.historique = charger_conversation(fichier)
+            st.session_state.historique = donnees.get("messages", [])
+            st.session_state.titre_actuel = titre_affiche
             st.rerun()
 
 st.title("MoonIA")
@@ -142,7 +189,9 @@ for message in st.session_state.historique:
 question = st.chat_input("Écris ton message ici...")
 
 if question:
-    if st.session_state.fichier_actuel is None:
+    premiere_fois = st.session_state.fichier_actuel is None
+
+    if premiere_fois:
         st.session_state.fichier_actuel = nouveau_nom_fichier()
 
     st.session_state.historique.append({"role": "user", "content": question})
@@ -159,6 +208,16 @@ if question:
 
     st.session_state.historique.append({"role": "assistant", "content": reponse_bot})
 
-    sauvegarder_conversation(st.session_state.fichier_actuel, st.session_state.historique)
+    if premiere_fois:
+        st.session_state.titre_actuel = generer_titre(question)
+
+    sauvegarder_conversation(
+        st.session_state.fichier_actuel,
+        st.session_state.historique,
+        st.session_state.titre_actuel
+    )
+
+    if premiere_fois:
+        st.rerun()
        
         
