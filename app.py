@@ -47,15 +47,6 @@ html, body, [class*="css"] {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
-[data-testid="stChatMessage"] {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 1.2rem 0 !important;
-    max-width: 700px;
-    margin: 0 auto;
-}
-
 .block-container {
     max-width: 700px;
     padding-top: 2rem;
@@ -75,8 +66,29 @@ h1 {
     margin: 0 auto;
 }
 
-[data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] {
-    display: none !important;
+.user-bubble {
+    background-color: #2b2b2b;
+    color: #f5f5f5;
+    border-radius: 14px;
+    padding: 0.6rem 1rem;
+    display: inline-block;
+    max-width: 80%;
+    text-align: left;
+}
+
+.user-bubble-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0.6rem 0;
+}
+
+.bot-wrapper {
+    text-align: left;
+    margin: 0.6rem 0;
+}
+
+.bot-text {
+    color: #e8e8e8;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -106,13 +118,26 @@ with st.sidebar:
 
 st.title("MoonIA")
 
+
+def afficher_message_user(texte):
+    st.markdown(
+        f'<div class="user-bubble-wrapper"><div class="user-bubble">{texte}</div></div>',
+        unsafe_allow_html=True
+    )
+
+
+def afficher_message_bot(texte):
+    st.markdown(
+        f'<div class="bot-wrapper"><b>🌙 MoonIA</b><br><span class="bot-text">{texte}</span></div>',
+        unsafe_allow_html=True
+    )
+
+
 for message in st.session_state.historique:
-    with st.chat_message(message["role"]):
-        if message["role"] == "user":
-            st.markdown("**Toi**")
-        else:
-            st.markdown("**🌙 MoonIA**")
-        st.markdown(message["content"])
+    if message["role"] == "user":
+        afficher_message_user(message["content"])
+    else:
+        afficher_message_bot(message["content"])
 
 question = st.chat_input("Écris ton message ici...")
 
@@ -121,19 +146,16 @@ if question:
         st.session_state.fichier_actuel = nouveau_nom_fichier()
 
     st.session_state.historique.append({"role": "user", "content": question})
-    with st.chat_message("user"):
-        st.markdown("**Toi**")
-        st.markdown(question)
+    afficher_message_user(question)
 
-    with st.chat_message("assistant"):
-        st.markdown("**🌙 MoonIA**")
-        with st.spinner("MoonIA est en train d'écrire..."):
-            reponse = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=st.session_state.historique
-            )
-            reponse_bot = reponse.choices[0].message.content
-        st.markdown(reponse_bot)
+    with st.spinner("MoonIA est en train d'écrire..."):
+        reponse = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=st.session_state.historique
+        )
+        reponse_bot = reponse.choices[0].message.content
+
+    afficher_message_bot(reponse_bot)
 
     st.session_state.historique.append({"role": "assistant", "content": reponse_bot})
 
