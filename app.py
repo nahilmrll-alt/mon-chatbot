@@ -101,3 +101,7 @@ if question:
 
     # Sauvegarde la conversation sur le disque
     sauvegarder_conversation(st.session_state.fichier_actuel, st.session_state.historique)
+  
+ st.set_page_config(page_title="MoonIA", page_icon="💬")
+
+st.title("MoonIA")
