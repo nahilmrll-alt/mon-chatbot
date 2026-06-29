@@ -97,7 +97,7 @@ if question:
         st.markdown(reponse_bot)
 
     # Ajoute la réponse à l'historique
-    st.session_state.historique.append({"role": "assistant", "content": reponse_bot})
+ st.session_state.historique.append({"role": "assistant", "content": reponse_bot})
 
     # Sauvegarde la conversation sur le disque
     sauvegarder_conversation(st.session_state.fichier_actuel, st.session_state.historique)
