@@ -128,4 +128,47 @@ if question:
 
     st.session_state.historique.append({"role": "assistant", "content": reponse_bot})
 
-    sauvegarder_conversation(st.session_state.fichier_actuel, st.session_state.historique)
+    sauvegarder_conversation(st.session_state.fichier_actuel, st.session_state.historique)st.markdown
+    st.markdown("""
+<style>
+.stApp {
+    background-color: #1a1a1a;
+}
+
+html, body, [class*="css"] {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+[data-testid="stChatMessage"] {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 1.2rem 0 !important;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.block-container {
+    max-width: 700px;
+    padding-top: 2rem;
+}
+
+h1 {
+    font-size: 1.8rem !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stSidebar"] {
+    background-color: #161616;
+}
+
+[data-testid="stChatInput"] {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+[data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] {
+    display: none !important;
+}
+</style>
+""", unsafe_allow_html=True)
