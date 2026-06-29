@@ -108,6 +108,10 @@ st.title("MoonIA")
 
 for message in st.session_state.historique:
     with st.chat_message(message["role"]):
+        if message["role"] == "user":
+            st.markdown("**Toi**")
+        else:
+            st.markdown("**🌙 MoonIA**")
         st.markdown(message["content"])
 
 question = st.chat_input("Écris ton message ici...")
@@ -118,17 +122,10 @@ if question:
 
     st.session_state.historique.append({"role": "user", "content": question})
     with st.chat_message("user"):
+        st.markdown("**Toi**")
         st.markdown(question)
 
     with st.chat_message("assistant"):
-        with st.spinner("Réflexion..."):
-            reponse = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=st.session_state.historique
-            )
-            reponse_bot = reponse.choices[0].message.content
-        st.markdown(reponse_bot)
-
-    st.session_state.historique.append({"role": "assistant", "content": reponse_bot})
-
-    sauvegarder_conversation(st.session_state.fichier_actuel, st.session_state.historique)
+        st.markdown("**🌙 MoonIA**")
+        with st.spinner("MoonIA est en train d'écrire..."):
+            reponse =
