@@ -4,13 +4,22 @@ from dotenv import load_dotenv
 import os
 import json
 from datetime import datetime
+import requests
 
 load_dotenv()
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
 
 DOSSIER_CONVERSATIONS = "conversations"
 if not os.path.exists(DOSSIER_CONVERSATIONS):
     os.makedirs(DOSSIER_CONVERSATIONS)
+
+# Personnalite / instructions cachees donnees au bot
+PERSONNALITE = (
+    "Tu es MoonIA, un assistant IA chaleureux, clair et serviable. "
+    "Tu reponds en francais sauf si on te demande une autre langue. "
+    "Tu es concis mais complet, et tu expliques les choses simplement."
+)
 
 
 def lister_conversations():
@@ -56,6 +65,62 @@ def generer_titre(premier_message):
         return titre[:40]
     except Exception:
         return premier_message[:40]
+
+
+def a_besoin_recherche_web(message):
+    """Detecte si la question necessite probablement une recherche web."""
+    mots_cles = [
+        "aujourd'hui", "actualite", "actualites", "recent", "recente",
+        "derniere", "dernier", "maintenant", "en ce moment", "2026",
+        "qui est le president", "meteo", "score", "resultat", "prix actuel",
+        "cours de", "nouvelles"
+    ]
+    message_minuscule = message.lower()
+    return any(mot in message_minuscule for mot in mots_cles)
+
+
+def rechercher_sur_le_web(requete):
+    """Effectue une recherche web via Tavily et renvoie un resume textuel des resultats."""
+    if not TAVILY_API_KEY:
+        return None
+    try:
+        reponse = requests.post(
+            "https://api.tavily.com/search",
+            json={
+                "api_key": TAVILY_API_KEY,
+                "query": requete,
+                "max_results": 4,
+                "include_answer": True
+            },
+            timeout=10
+        )
+        donnees = reponse.json()
+        resultats_texte = ""
+        if donnees.get("answer"):
+            resultats_texte += f"Resume: {donnees['answer']}\n\n"
+        for resultat in donnees.get("results", []):
+            resultats_texte += f"- {resultat.get('title', '')}: {resultat.get('content', '')[:300]}\n"
+        return resultats_texte if resultats_texte else None
+    except Exception:
+        return None
+
+
+def extraire_texte_fichier(fichier_televerse):
+    """Extrait le texte d'un fichier televerse (txt ou pdf)."""
+    nom = fichier_televerse.name.lower()
+    if nom.endswith(".txt"):
+        return fichier_televerse.read().decode("utf-8", errors="ignore")
+    elif nom.endswith(".pdf"):
+        try:
+            from pypdf import PdfReader
+            lecteur = PdfReader(fichier_televerse)
+            texte = ""
+            for page in lecteur.pages:
+                texte += page.extract_text() or ""
+            return texte
+        except Exception:
+            return "(Impossible de lire ce PDF)"
+    return "(Format de fichier non pris en charge)"
 
 
 st.set_page_config(page_title="MoonIA", page_icon="💬")
@@ -140,6 +205,8 @@ if "historique" not in st.session_state:
     st.session_state.historique = []
 if "titre_actuel" not in st.session_state:
     st.session_state.titre_actuel = None
+if "contexte_fichier" not in st.session_state:
+    st.session_state.contexte_fichier = None
 
 with st.sidebar:
     st.title("💬 Conversations")
@@ -148,7 +215,20 @@ with st.sidebar:
         st.session_state.fichier_actuel = None
         st.session_state.historique = []
         st.session_state.titre_actuel = None
+        st.session_state.contexte_fichier = None
         st.rerun()
+
+    st.divider()
+
+    fichier_televerse = st.file_uploader(
+        "📎 Joindre un fichier (.txt ou .pdf)",
+        type=["txt", "pdf"]
+    )
+    if fichier_televerse is not None:
+        if st.button("Analyser ce fichier", use_container_width=True):
+            texte_extrait = extraire_texte_fichier(fichier_televerse)
+            st.session_state.contexte_fichier = texte_extrait[:8000]
+            st.success(f"Fichier '{fichier_televerse.name}' pret a etre discute !")
 
     st.divider()
     st.caption("Récents")
@@ -156,6 +236,8 @@ with st.sidebar:
     conversations = lister_conversations()
     for fichier in conversations:
         donnees = charger_conversation(fichier)
+        if not isinstance(donnees, dict):
+            continue
         titre_affiche = donnees.get("titre", fichier.replace(".json", ""))
         if st.button(titre_affiche, key=fichier, use_container_width=True):
             st.session_state.fichier_actuel = fichier
@@ -197,10 +279,38 @@ if question:
     st.session_state.historique.append({"role": "user", "content": question})
     afficher_message_user(question)
 
+    # Construit les messages a envoyer, avec personnalite + contexte fichier + recherche web
+    messages_a_envoyer = [{"role": "system", "content": PERSONNALITE}]
+
+    if st.session_state.contexte_fichier:
+        messages_a_envoyer.append({
+            "role": "system",
+            "content": (
+                "Voici le contenu d'un fichier fourni par l'utilisateur, "
+                "utilise-le pour repondre si pertinent :\n\n"
+                f"{st.session_state.contexte_fichier}"
+            )
+        })
+
+    if a_besoin_recherche_web(question):
+        with st.spinner("Recherche d'informations recentes..."):
+            resultats_web = rechercher_sur_le_web(question)
+        if resultats_web:
+            messages_a_envoyer.append({
+                "role": "system",
+                "content": (
+                    "Voici des resultats de recherche web recents, "
+                    "utilise-les pour repondre de facon a jour :\n\n"
+                    f"{resultats_web}"
+                )
+            })
+
+    messages_a_envoyer.extend(st.session_state.historique)
+
     with st.spinner("MoonIA est en train d'écrire..."):
         reponse = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=st.session_state.historique
+            messages=messages_a_envoyer
         )
         reponse_bot = reponse.choices[0].message.content
 
@@ -219,5 +329,3 @@ if question:
 
     if premiere_fois:
         st.rerun()
-       
-        
