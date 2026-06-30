@@ -124,7 +124,7 @@ st.set_page_config(page_title="MoonIA", page_icon="💬")
 st.markdown("""
 <style>
 .stApp {
-    background-color: #2e2e2e;
+    background-color: #1a1a1a;
     font-size: 17px;
 }
 
@@ -143,7 +143,7 @@ h1 {
 }
 
 [data-testid="stSidebar"] {
-    background-color: #242424;
+    background-color: #161616;
     font-size: 16px;
 }
 
@@ -157,7 +157,7 @@ h1 {
 }
 
 .user-bubble {
-    background-color: #3a3a3a;
+    background-color: #2b2b2b;
     color: #f5f5f5;
     border-radius: 14px;
     padding: 0.75rem 1.1rem;
