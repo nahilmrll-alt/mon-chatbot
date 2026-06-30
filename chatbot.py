@@ -18,6 +18,5 @@ while True:
     reponse_bot = reponse["message"]["content"]
     print("Bot :", reponse_bot)
 
-    historique.append({"role": "assistant", "content": reponse_bot})
 
    
